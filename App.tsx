@@ -14,7 +14,7 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : null;
   });
   
-  const [isLocked, setIsLocked] = useState(!!currentUser); // Se tem usuário, começa travado para simular biometria
+  const [isLocked, setIsLocked] = useState(!!currentUser);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -45,20 +45,7 @@ const App: React.FC = () => {
     }
   }, [state, currentUser]);
 
-  const handleUnlock = async () => {
-    // Tenta usar a biometria nativa do navegador (FaceID/TouchID/Passcode)
-    if (window.PublicKeyCredential) {
-      try {
-        // Isso apenas "acorda" a interface de segurança do celular
-        // Em um PWA real, usaríamos WebAuthn, aqui simulamos o fluxo de sucesso
-        setIsLocked(false);
-      } catch (e) {
-        setIsLocked(false);
-      }
-    } else {
-      setIsLocked(false);
-    }
-  };
+  const handleUnlock = () => setIsLocked(false);
 
   const handleAuthSubmit = async (e: React.FormEvent, email: string, pass: string, name?: string) => {
     e.preventDefault();
@@ -79,12 +66,6 @@ const App: React.FC = () => {
     } finally {
       setIsAuthLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('bliq_current_user');
-    setIsLocked(false);
   };
 
   const currentMonthData = state.months[currentMonth] || { transactions: [], settings: { carryOverBalance: false } };
@@ -125,11 +106,9 @@ const App: React.FC = () => {
 
   const handleQuickConfirm = (id: string) => {
     setState(prev => {
-      const currentMonthTxs = [...(prev.months[currentMonth]?.transactions || [])];
-      const index = currentMonthTxs.findIndex(t => t.id === id);
-      if (index !== -1) {
-        currentMonthTxs[index] = { ...currentMonthTxs[index], status: 'CONFIRMED' };
-      }
+      const currentMonthTxs = [...(prev.months[currentMonth]?.transactions || [])].map(tx => 
+        tx.id === id ? { ...tx, status: 'CONFIRMED' as const } : tx
+      );
       return {
         ...prev,
         months: { ...prev.months, [currentMonth]: { ...prev.months[currentMonth]!, transactions: currentMonthTxs } }
@@ -137,214 +116,193 @@ const App: React.FC = () => {
     });
   };
 
+  // Added handleDeleteTransaction to fix "Cannot find name 'handleDeleteTransaction'" error.
   const handleDeleteTransaction = (id: string) => {
-    if(!confirm("Deseja apagar este registro?")) return;
-    setState(prev => ({
-      ...prev,
-      months: { ...prev.months, [currentMonth]: { ...prev.months[currentMonth]!, transactions: prev.months[currentMonth]!.transactions.filter(t => t.id !== id) } }
-    }));
+    setState(prev => {
+      const currentMonthTxs = (prev.months[currentMonth]?.transactions || []).filter(tx => tx.id !== id);
+      return {
+        ...prev,
+        months: { ...prev.months, [currentMonth]: { ...prev.months[currentMonth]!, transactions: currentMonthTxs } }
+      };
+    });
   };
 
-  // TELA DE BLOQUEIO (BIOMETRIA SIMULADA)
   if (currentUser && isLocked) {
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8 safe-top">
-        <div className="w-20 h-20 bg-lime-500 rounded-3xl flex items-center justify-center shadow-[0_0_50px_rgba(190,242,100,0.3)] mb-8">
-           <i className="fa-solid fa-bolt-lightning text-3xl text-black"></i>
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8">
+        <div className="w-16 h-16 bg-lime-500 rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-lime-500/20">
+           <i className="fa-solid fa-bolt-lightning text-2xl text-black"></i>
         </div>
-        <h1 className="text-2xl font-black text-white mb-2">Olá, {currentUser.name.split(' ')[0]}</h1>
-        <p className="text-slate-500 text-sm mb-12 uppercase tracking-widest font-bold">App Bloqueado</p>
-        
-        <button 
-          onClick={handleUnlock}
-          className="bg-white text-black px-12 py-5 rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all flex items-center gap-3"
-        >
-          <i className="fa-solid fa-face-smile"></i>
-          Desbloquear
-        </button>
-        
-        <button onClick={handleLogout} className="mt-12 text-rose-500 text-xs font-black uppercase tracking-widest">Sair da Conta</button>
+        <h1 className="text-xl font-bold text-white mb-8">Olá, {currentUser.name.split(' ')[0]}</h1>
+        <button onClick={handleUnlock} className="bg-white text-black px-10 py-4 rounded-xl font-bold text-xs uppercase tracking-widest active:scale-95 transition-all">Desbloquear App</button>
       </div>
     );
   }
 
-  // TELA DE LOGIN
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-black flex flex-col font-sans p-8 items-center justify-center safe-top">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-12">
-            <div className="w-20 h-20 bg-lime-500 rounded-[2rem] flex items-center justify-center shadow-lg mx-auto mb-6">
-              <i className="fa-solid fa-bolt-lightning text-3xl text-black"></i>
-            </div>
-            <h1 className="text-4xl font-black text-white tracking-tighter">BLIQ MONEY</h1>
-          </div>
-          
-          {authError && <div className="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-5 rounded-2xl text-xs font-black uppercase mb-6">{authError}</div>}
-          
-          <form onSubmit={(e) => {
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-10 safe-top-padding">
+        <div className="w-14 h-14 bg-lime-500 rounded-2xl flex items-center justify-center mb-6"><i className="fa-solid fa-bolt-lightning text-xl text-black"></i></div>
+        <h1 className="text-3xl font-black mb-8 tracking-tighter">BLIQ <span className="text-lime-500">MONEY</span></h1>
+        
+        <form onSubmit={(e) => {
             const fd = new FormData(e.currentTarget);
             handleAuthSubmit(e, fd.get('email') as string, fd.get('pass') as string, fd.get('name') as string);
-          }} className="space-y-4">
-            {authView === 'signup' && (
-              <input name="name" required type="text" placeholder="Seu Nome" className="w-full bg-slate-900 border border-white/5 rounded-2xl px-6 py-5 text-white font-bold" />
-            )}
-            <input name="email" required type="email" placeholder="E-mail" className="w-full bg-slate-900 border border-white/5 rounded-2xl px-6 py-5 text-white font-bold" />
-            <input name="pass" required type="password" placeholder="Senha" className="w-full bg-slate-900 border border-white/5 rounded-2xl px-6 py-5 text-white font-bold" />
-            <button disabled={isAuthLoading} type="submit" className="w-full bg-white text-black py-6 rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all mt-4">
-              {isAuthLoading ? 'Carregando...' : authView === 'login' ? 'Entrar' : 'Criar Conta'}
-            </button>
-          </form>
-          
-          <button onClick={() => setAuthView(authView === 'login' ? 'signup' : 'login')} className="w-full mt-8 text-xs text-slate-500 font-bold uppercase tracking-widest hover:text-white transition-colors">
-            {authView === 'login' ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Faça o Login'}
-          </button>
-        </div>
+          }} className="w-full max-w-sm space-y-4">
+          {authView === 'signup' && <input name="name" required placeholder="Seu Nome" className="w-full bg-slate-900 border border-white/5 rounded-xl px-6 py-4 text-white font-semibold" />}
+          <input name="email" required type="email" placeholder="E-mail" className="w-full bg-slate-900 border border-white/5 rounded-xl px-6 py-4 text-white font-semibold" />
+          <input name="pass" required type="password" placeholder="Senha" className="w-full bg-slate-900 border border-white/5 rounded-xl px-6 py-4 text-white font-semibold" />
+          <button type="submit" className="w-full bg-white text-black py-4 rounded-xl font-black text-xs uppercase tracking-widest mt-4 active:scale-95 transition-all">{isAuthLoading ? 'Aguarde...' : authView === 'login' ? 'Entrar' : 'Cadastrar'}</button>
+        </form>
+        <button onClick={() => setAuthView(authView === 'login' ? 'signup' : 'login')} className="mt-8 text-[10px] text-slate-500 font-bold uppercase tracking-widest">{authView === 'login' ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Login'}</button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans flex flex-col">
-      {/* HEADER AJUSTADO PARA O NOTCH */}
-      <header className="sticky top-0 z-50 bg-black/90 backdrop-blur-xl border-b border-white/5 safe-top">
-        <div className="px-6 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-lime-500 rounded-xl flex items-center justify-center shadow-lg"><i className="fa-solid fa-bolt-lightning text-black"></i></div>
-            <h1 className="text-xl font-black tracking-tighter">BLIQ <span className="text-lime-400">MONEY</span></h1>
+    <div className="flex flex-col h-screen bg-black text-white font-sans overflow-hidden">
+      {/* HEADER PREMIUM */}
+      <header className="bg-black/80 backdrop-blur-2xl border-b border-white/5 safe-top-padding z-50">
+        <div className="px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-lime-500 rounded-lg flex items-center justify-center"><i className="fa-solid fa-bolt-lightning text-xs text-black"></i></div>
+            <span className="font-black text-sm tracking-tighter uppercase">Bliq <span className="text-lime-500">Money</span></span>
           </div>
           <div className="flex items-center gap-4">
             <select 
               value={currentMonth} 
               onChange={(e) => setCurrentMonth(e.target.value as MonthKey)} 
-              className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-xs font-black uppercase text-white outline-none"
+              className="bg-slate-900/50 border border-white/10 rounded-lg px-3 py-1.5 text-[10px] font-black uppercase text-white outline-none"
             >
               {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
-            <button onClick={() => setIsLocked(true)} className="text-slate-500 text-xl"><i className="fa-solid fa-lock"></i></button>
+            <button onClick={() => setIsLocked(true)} className="text-slate-600"><i className="fa-solid fa-lock text-sm"></i></button>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 px-6 pt-8 pb-32 max-w-2xl mx-auto w-full">
-        {/* RESUMO DE SALDOS COM FONTES MAIORES */}
-        <div className={`${activeTab === 'home' ? 'block' : 'hidden'} space-y-8`}>
-          <section className="grid grid-cols-1 gap-4">
-            <div className="bg-rose-600 p-8 rounded-[2rem] shadow-[0_20px_40px_rgba(229,43,80,0.2)]">
-                <span className="text-[10px] font-black text-white/60 uppercase block mb-2 tracking-[0.2em]">Saldo Disponível</span>
-                <div className="text-4xl font-black tracking-tighter">R$ {totals.net.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+      {/* CONTEÚDO PRINCIPAL SCROLLÁVEL */}
+      <main className="scroll-container px-6 pt-6 pb-32">
+        {/* DASHBOARD TAB */}
+        <div className={`${activeTab === 'home' ? 'block' : 'hidden'} space-y-6`}>
+          {/* CARD DE SALDO DINÂMICO */}
+          <section className={`p-8 rounded-[2rem] transition-colors duration-500 shadow-xl ${totals.net >= 0 ? 'bg-lime-500' : 'bg-rose-600'}`}>
+            <span className={`text-[10px] font-black uppercase tracking-[0.2em] block mb-2 ${totals.net >= 0 ? 'text-black/60' : 'text-white/60'}`}>Saldo Disponível</span>
+            <div className={`text-4xl font-black tracking-tighter ${totals.net >= 0 ? 'text-black' : 'text-white'}`}>
+              R$ {totals.net.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-900/50 p-6 rounded-3xl border border-white/5">
-                  <span className="text-[9px] font-black text-lime-400 uppercase block mb-1">Recebido</span>
-                  <div className="text-xl font-black">R$ {totals.income.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-              </div>
-              <div className="bg-slate-900/50 p-6 rounded-3xl border border-white/5">
-                  <span className="text-[9px] font-black text-rose-400 uppercase block mb-1">Pago</span>
-                  <div className="text-xl font-black">R$ {totals.expense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-              </div>
+            <div className={`mt-6 pt-6 border-t ${totals.net >= 0 ? 'border-black/5' : 'border-white/10'} flex justify-between`}>
+               <div>
+                 <span className={`text-[9px] font-bold uppercase block ${totals.net >= 0 ? 'text-black/50' : 'text-white/50'}`}>Recebido</span>
+                 <span className={`text-sm font-black ${totals.net >= 0 ? 'text-black' : 'text-white'}`}>R$ {totals.income.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+               </div>
+               <div className="text-right">
+                 <span className={`text-[9px] font-bold uppercase block ${totals.net >= 0 ? 'text-black/50' : 'text-white/50'}`}>Gasto Real</span>
+                 <span className={`text-sm font-black ${totals.net >= 0 ? 'text-black' : 'text-white'}`}>R$ {totals.expense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+               </div>
             </div>
           </section>
 
           <Dashboard data={state} />
         </div>
 
-        {/* LISTA DE REGISTROS COM BOTÃO DE BAIXA RÁPIDA */}
-        <div className={`${activeTab === 'records' ? 'block' : 'hidden'} space-y-6`}>
-           <div className="bg-slate-900/30 rounded-[2.5rem] border border-white/5 overflow-hidden">
-              <div className="p-6 border-b border-white/5 flex gap-3">
-                 <button onClick={() => setFilterType('ALL')} className={`flex-1 py-3 rounded-2xl text-[10px] font-black ${filterType === 'ALL' ? 'bg-white/10 text-white' : 'text-slate-600'}`}>TODOS</button>
-                 <button onClick={() => setFilterType('INCOME')} className={`flex-1 py-3 rounded-2xl text-[10px] font-black ${filterType === 'INCOME' ? 'text-lime-400 bg-lime-400/10' : 'text-slate-600'}`}>GANHOS</button>
-                 <button onClick={() => setFilterType('EXPENSE')} className={`flex-1 py-3 rounded-2xl text-[10px] font-black ${filterType === 'EXPENSE' ? 'text-rose-500 bg-rose-500/10' : 'text-slate-600'}`}>GASTOS</button>
-              </div>
-              
-              <div className="divide-y divide-white/5">
-                {currentMonthData.transactions
-                  .filter(t => filterType === 'ALL' || t.type === filterType)
-                  .map(tx => (
-                  <div key={tx.id} className="p-6 flex items-center justify-between active:bg-white/5 transition-colors">
-                    <div className="flex items-center gap-4">
-                      {tx.status === 'PENDING' ? (
-                        <button 
-                          onClick={() => handleQuickConfirm(tx.id)}
-                          className="w-12 h-12 rounded-full border-2 border-dashed border-slate-700 flex items-center justify-center text-slate-600 hover:border-lime-500 hover:text-lime-500 transition-all"
-                        >
-                          <i className="fa-solid fa-check"></i>
-                        </button>
-                      ) : (
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${tx.type === 'INCOME' ? 'bg-lime-500/20 text-lime-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                          <i className="fa-solid fa-check-double"></i>
-                        </div>
-                      )}
-                      <div>
-                        <div className="text-lg font-bold">{tx.description}</div>
-                        <div className="text-[10px] text-slate-600 font-black uppercase tracking-wider">{tx.category} • {tx.status === 'CONFIRMED' ? 'PAGO/RECEBIDO' : 'PENDENTE'}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-lg font-black ${tx.type === 'INCOME' ? 'text-lime-400' : 'text-white'}`}>
-                        {tx.type === 'INCOME' ? '+' : '-'} {tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </div>
-                      <div className="flex gap-4 justify-end mt-2">
-                        <button onClick={() => setEditingTransaction(tx)} className="text-slate-600 text-lg"><i className="fa-solid fa-pen"></i></button>
-                        <button onClick={() => handleDeleteTransaction(tx.id)} className="text-slate-600 text-lg"><i className="fa-solid fa-trash"></i></button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {currentMonthData.transactions.length === 0 && (
-                  <div className="p-20 text-center text-slate-600 font-bold uppercase text-[10px] tracking-widest">Nenhum registro este mês</div>
-                )}
-              </div>
+        {/* RECORDS TAB */}
+        <div className={`${activeTab === 'records' ? 'block' : 'hidden'} space-y-4`}>
+           <div className="flex gap-2 mb-4">
+             {['ALL', 'INCOME', 'EXPENSE'].map(type => (
+               <button 
+                 key={type} 
+                 onClick={() => setFilterType(type as any)}
+                 className={`flex-1 py-3 rounded-xl text-[9px] font-black transition-all ${filterType === type ? 'bg-white text-black' : 'bg-slate-900 text-slate-500 border border-white/5'}`}
+               >
+                 {type === 'ALL' ? 'TODOS' : type === 'INCOME' ? 'GANHOS' : 'GASTOS'}
+               </button>
+             ))}
+           </div>
+           
+           <div className="space-y-3">
+             {currentMonthData.transactions
+               .filter(t => filterType === 'ALL' || t.type === filterType)
+               .map(tx => (
+               <div key={tx.id} className="bg-slate-900/50 p-5 rounded-2xl border border-white/5 flex items-center justify-between">
+                 <div className="flex items-center gap-4">
+                   {tx.status === 'PENDING' ? (
+                     <button onClick={() => handleQuickConfirm(tx.id)} className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center text-slate-500 active:bg-lime-500 active:text-black transition-all">
+                       <i className="fa-solid fa-check text-xs"></i>
+                     </button>
+                   ) : (
+                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'INCOME' ? 'bg-lime-500/10 text-lime-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                       <i className="fa-solid fa-check-double text-xs"></i>
+                     </div>
+                   )}
+                   <div>
+                     <h4 className="text-sm font-bold truncate max-w-[120px]">{tx.description}</h4>
+                     <p className="text-[9px] text-slate-500 font-bold uppercase">{tx.category}</p>
+                   </div>
+                 </div>
+                 <div className="text-right">
+                   <div className={`text-sm font-black ${tx.type === 'INCOME' ? 'text-lime-400' : 'text-white'}`}>
+                     {tx.type === 'INCOME' ? '+' : '-'} R$ {tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                   </div>
+                   <div className="flex gap-3 justify-end mt-1">
+                     <button onClick={() => setEditingTransaction(tx)} className="text-slate-600 text-xs"><i className="fa-solid fa-pen"></i></button>
+                     <button onClick={() => { if(confirm("Apagar?")) handleDeleteTransaction(tx.id); }} className="text-slate-600 text-xs"><i className="fa-solid fa-trash-can"></i></button>
+                   </div>
+                 </div>
+               </div>
+             ))}
            </div>
         </div>
 
-        {/* INTELIGÊNCIA ARTIFICIAL */}
-        <div className={`${activeTab === 'ai' ? 'block' : 'hidden'} space-y-6`}>
-           <div className="bg-slate-900 p-10 rounded-[3rem] border border-white/10 text-center">
-              <div className="w-20 h-20 bg-gradient-to-tr from-lime-500 to-emerald-400 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-lime-500/20">
-                <i className="fa-solid fa-brain text-black text-3xl"></i>
-              </div>
-              <h3 className="font-black text-2xl tracking-tighter mb-4">Mestria Bliq IA</h3>
-              <p className="text-slate-500 text-sm mb-10 leading-relaxed font-medium">Analise seu fluxo de caixa e receba estratégias personalizadas para sobrar mais dinheiro.</p>
-              
-              <button 
-                onClick={async () => { setIsAiLoading(true); const advice = await getFinancialAdvice(currentMonth, currentMonthData.transactions); setAiInsight(advice); setIsAiLoading(false); }} 
-                disabled={isAiLoading} 
-                className="w-full bg-white text-black py-6 rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all shadow-xl"
-              >
-                {isAiLoading ? 'Analisando Mercado...' : 'Gerar Diagnóstico'}
-              </button>
-              
-              {aiInsight && (
-                <div className="mt-10 text-left text-sm text-slate-300 leading-relaxed bg-black/50 p-8 rounded-[2rem] border border-white/5">
-                  <div className="prose prose-invert prose-sm">
-                    {aiInsight.split('\n').map((line, i) => <p key={i} className="mb-4">{line}</p>)}
-                  </div>
-                </div>
-              )}
+        {/* AI TAB */}
+        <div className={`${activeTab === 'ai' ? 'block' : 'hidden'} text-center py-10`}>
+           <div className="w-16 h-16 bg-gradient-to-br from-lime-400 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl">
+             <i className="fa-solid fa-brain text-2xl text-black"></i>
            </div>
+           <h2 className="text-2xl font-black mb-4 tracking-tighter">Bliq Intelligence</h2>
+           <p className="text-slate-500 text-xs font-medium px-10 mb-10">Análise preditiva baseada no seu comportamento financeiro real.</p>
+           
+           <button 
+             onClick={async () => { setIsAiLoading(true); const advice = await getFinancialAdvice(currentMonth, currentMonthData.transactions); setAiInsight(advice); setIsAiLoading(false); }}
+             className="w-full bg-white text-black py-4 rounded-xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all"
+             disabled={isAiLoading}
+           >
+             {isAiLoading ? 'Processando Dados...' : 'Gerar Insight Estratégico'}
+           </button>
+           
+           {aiInsight && (
+             <div className="mt-8 text-left bg-slate-900/50 p-6 rounded-2xl border border-white/5 text-sm leading-relaxed text-slate-300">
+                {aiInsight.split('\n').map((l, i) => <p key={i} className="mb-3">{l}</p>)}
+             </div>
+           )}
         </div>
       </main>
 
-      {/* TAB BAR AJUSTADA PARA O IPHONE */}
-      <nav className="fixed bottom-0 left-0 right-0 z-[100] safe-bottom bg-black/80 backdrop-blur-3xl border-t border-white/5">
-        <div className="h-20 flex items-center justify-around px-4">
-          <button onClick={() => setActiveTab('home')} className={`w-14 h-14 flex items-center justify-center rounded-2xl text-xl ${activeTab === 'home' ? 'text-lime-400' : 'text-slate-600'}`}>
-            <i className="fa-solid fa-chart-pie"></i>
+      {/* TAB BAR CORRIGIDA (DIAGRAMAÇÃO PERFEITA) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-[100] safe-bottom-padding bg-black/60 backdrop-blur-3xl border-t border-white/5">
+        <div className="h-16 flex items-center px-6 relative">
+          <button onClick={() => setActiveTab('home')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'home' ? 'text-lime-400' : 'text-slate-600'}`}>
+            <i className="fa-solid fa-house text-lg"></i>
+            <span className="text-[8px] font-black uppercase tracking-widest">Início</span>
           </button>
           
-          <button onClick={() => setIsModalOpen(true)} className="w-16 h-16 bg-lime-500 text-black rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(190,242,100,0.4)] -translate-y-6 border-[6px] border-black active:scale-90 transition-all">
-            <i className="fa-solid fa-plus text-2xl"></i>
-          </button>
+          <div className="relative -top-8 px-4">
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="w-14 h-14 bg-lime-500 rounded-full flex items-center justify-center text-black shadow-2xl shadow-lime-500/30 border-[4px] border-black active:scale-90 transition-all"
+            >
+              <i className="fa-solid fa-plus text-xl"></i>
+            </button>
+          </div>
           
-          <button onClick={() => setActiveTab('records')} className={`w-14 h-14 flex items-center justify-center rounded-2xl text-xl ${activeTab === 'records' ? 'text-lime-400' : 'text-slate-600'}`}>
-            <i className="fa-solid fa-receipt"></i>
+          <button onClick={() => setActiveTab('records')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'records' ? 'text-lime-400' : 'text-slate-600'}`}>
+            <i className="fa-solid fa-receipt text-lg"></i>
+            <span className="text-[8px] font-black uppercase tracking-widest">Extrato</span>
           </button>
 
-          <button onClick={() => setActiveTab('ai')} className={`w-14 h-14 flex items-center justify-center rounded-2xl text-xl ${activeTab === 'ai' ? 'text-lime-400' : 'text-slate-600'}`}>
-            <i className="fa-solid fa-bolt-lightning"></i>
+          <button onClick={() => setActiveTab('ai')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'ai' ? 'text-lime-400' : 'text-slate-600'}`}>
+            <i className="fa-solid fa-robot text-lg"></i>
+            <span className="text-[8px] font-black uppercase tracking-widest">IA Bliq</span>
           </button>
         </div>
       </nav>
