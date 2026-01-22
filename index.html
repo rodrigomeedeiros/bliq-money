@@ -10,13 +10,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Bliq Money">
-    
-    <!-- Ícone que aparecerá no iPhone -->
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/10434/10434033.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -35,9 +33,7 @@
     <style>
       :root {
         --sat: env(safe-area-inset-top);
-        --sar: env(safe-area-inset-right);
         --sab: env(safe-area-inset-bottom);
-        --sal: env(safe-area-inset-left);
       }
       
       body { 
@@ -45,24 +41,28 @@
         color: #fff; 
         margin: 0; 
         padding: 0; 
-        overscroll-behavior: none;
+        overflow: hidden;
         -webkit-tap-highlight-color: transparent;
       }
 
       #root { 
-        min-height: 100vh;
+        height: 100vh;
         display: flex;
         flex-direction: column;
       }
 
-      /* Ajuste para o conteúdo não ficar embaixo do Notch */
-      .safe-top { padding-top: var(--sat); }
-      .safe-bottom { padding-bottom: var(--sab); }
-
-      /* Melhoria de scroll no iOS */
-      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .safe-top-padding { padding-top: calc(var(--sat) + 12px); }
+      .safe-bottom-padding { padding-bottom: calc(var(--sab) + 12px); }
       
-      input, select, button { font-size: 16px !important; } /* Evita zoom automático no iOS */
+      /* Scroll suave e sem barra */
+      .scroll-container {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .scroll-container::-webkit-scrollbar { display: none; }
+      
+      input, select, button { font-size: 16px !important; }
     </style>
 <script type="importmap">
 {
