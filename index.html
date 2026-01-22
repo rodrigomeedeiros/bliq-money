@@ -9,6 +9,9 @@
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bliq Money">
+    
+    <!-- Ícone que aparecerá no iPhone -->
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/10434/10434033.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -30,8 +33,36 @@
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-      body { background-color: #000; color: #fff; margin: 0; padding: 0; }
-      #root { height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+      :root {
+        --sat: env(safe-area-inset-top);
+        --sar: env(safe-area-inset-right);
+        --sab: env(safe-area-inset-bottom);
+        --sal: env(safe-area-inset-left);
+      }
+      
+      body { 
+        background-color: #000; 
+        color: #fff; 
+        margin: 0; 
+        padding: 0; 
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      #root { 
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Ajuste para o conteúdo não ficar embaixo do Notch */
+      .safe-top { padding-top: var(--sat); }
+      .safe-bottom { padding-bottom: var(--sab); }
+
+      /* Melhoria de scroll no iOS */
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      
+      input, select, button { font-size: 16px !important; } /* Evita zoom automático no iOS */
     </style>
 <script type="importmap">
 {
@@ -46,9 +77,8 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
-<body>
+<body class="antialiased">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
