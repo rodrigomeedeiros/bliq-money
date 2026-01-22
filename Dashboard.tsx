@@ -48,72 +48,82 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       value
     }));
 
-    return entries.sort((a, b) => b.value - a.value);
+    return entries.sort((a, b) => b.value - a.value).slice(0, 5);
   }, [data]);
 
-  const COLORS = ['#BEF264', '#E52B50', '#0EA5E9', '#A855F7', '#F59E0B', '#64748B'];
+  const COLORS = ['#BEF264', '#E52B50', '#0EA5E9', '#A855F7', '#F59E0B'];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <div className="lg:col-span-7 bg-slate-900/30 backdrop-blur-xl p-6 rounded-3xl border border-white/5">
-        <h3 className="text-[10px] font-black mb-6 text-slate-500 uppercase tracking-widest flex items-center gap-2">
+    <div className="grid grid-cols-1 gap-8">
+      {/* Gráfico de Barras */}
+      <div className="bg-slate-900/30 p-8 rounded-[2.5rem] border border-white/5">
+        <h3 className="text-[10px] font-black mb-8 text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
           <i className="fa-solid fa-chart-column text-lime-400"></i>
-          Sazonalidade de Fluxo
+          Fluxo Mensal
         </h3>
-        <div className="h-60 w-full">
+        <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={monthlyData} barGap={4}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" opacity={0.3} />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 10, fontWeight: 700}} />
+              <XAxis 
+                dataKey="name" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{fill: '#475569', fontSize: 12, fontWeight: 900}} 
+              />
               <Tooltip 
                 cursor={{fill: 'rgba(255,255,255,0.02)'}}
                 contentStyle={{ 
                   backgroundColor: '#000', 
-                  borderRadius: '12px', 
+                  borderRadius: '16px', 
                   border: '1px solid rgba(255,255,255,0.1)',
-                  fontSize: '10px',
-                  fontWeight: 'bold',
-                  color: '#fff'
+                  fontSize: '12px',
+                  fontWeight: 'bold'
                 }}
               />
-              <Bar dataKey="Receita" fill="#BEF264" radius={[4, 4, 0, 0]} barSize={20} />
-              <Bar dataKey="Despesa" fill="#E52B50" radius={[4, 4, 0, 0]} barSize={20} />
+              <Bar dataKey="Receita" fill="#BEF264" radius={[6, 6, 0, 0]} barSize={12} />
+              <Bar dataKey="Despesa" fill="#E52B50" radius={[6, 6, 0, 0]} barSize={12} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      <div className="lg:col-span-5 bg-slate-900/30 backdrop-blur-xl p-6 rounded-3xl border border-white/5">
-        <h3 className="text-[10px] font-black mb-6 text-slate-500 uppercase tracking-widest flex items-center gap-2">
+      {/* Gráfico de Rosca */}
+      <div className="bg-slate-900/30 p-8 rounded-[2.5rem] border border-white/5">
+        <h3 className="text-[10px] font-black mb-8 text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
           <i className="fa-solid fa-layer-group text-rose-400"></i>
-          Mix de Despesas
+          Mix de Gasto
         </h3>
-        <div className="h-60 w-full">
+        <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={categoryData}
                 cx="50%"
                 cy="50%"
-                innerRadius={50}
-                outerRadius={75}
-                paddingAngle={4}
+                innerRadius={60}
+                outerRadius={90}
+                paddingAngle={6}
                 dataKey="value"
                 stroke="none"
               >
                 {categoryData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} opacity={0.8} />
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: '#000', 
-                  borderRadius: '12px', 
+                  borderRadius: '16px', 
                   border: '1px solid rgba(255,255,255,0.1)',
-                  fontSize: '10px'
+                  fontSize: '12px'
                 }}
               />
-              <Legend verticalAlign="bottom" iconSize={8} wrapperStyle={{fontSize: '9px', fontWeight: 'bold', textTransform: 'uppercase'}} />
+              <Legend 
+                verticalAlign="bottom" 
+                iconSize={10} 
+                wrapperStyle={{paddingTop: '20px', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase'}} 
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
