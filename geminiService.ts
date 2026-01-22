@@ -1,8 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
-import { Transaction, MonthKey } from "./types";
+import { Transaction, MonthKey } from "../types";
 
 export const getFinancialAdvice = async (month: MonthKey, transactions: Transaction[]) => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  // Use this process.env.API_KEY string directly when initializing the @google/genai client instance
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const confirmedIn = transactions.filter(t => t.type === 'INCOME' && t.status === 'CONFIRMED').reduce((acc, t) => acc + t.amount, 0);
   const confirmedOut = transactions.filter(t => t.type === 'EXPENSE' && t.status === 'CONFIRMED').reduce((acc, t) => acc + t.amount, 0);
@@ -15,7 +16,7 @@ export const getFinancialAdvice = async (month: MonthKey, transactions: Transact
     Como um mentor de inteligência financeira estratégica, analise o mês de ${month}.
     Dados Atuais:
     - Recebido (Dinheiro em mãos): R$ ${confirmedIn}
-    - Pago (Contas liquidadas): R$ ${confirmedOut}
+    - Pago (Contas liquadas): R$ ${confirmedOut}
     - Saldo Real Hoje: R$ ${confirmedIn - confirmedOut}
     - Expectativa de Recebimento (Pendente): R$ ${pendingIn}
     - Contas a Pagar (Pendente): R$ ${pendingOut}
@@ -40,6 +41,7 @@ export const getFinancialAdvice = async (month: MonthKey, transactions: Transact
       }
     });
 
+    // Access the .text property on the GenerateContentResponse object directly.
     return response.text || "Análise concluída, mas sem texto gerado.";
   } catch (error) {
     console.error("Erro na IA:", error);
